@@ -6,7 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BrokenLens">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+<link rel="apple-touch-icon" sizes="256x256" href="icon.png">
 <link rel="manifest" href="manifest.json">
 <title>BrokenLens</title>
 <style>
@@ -106,10 +107,7 @@
   .camera-item.broken .cam-icon { background: rgba(255,68,68,0.2); }
   .camera-item.working .cam-icon { background: rgba(68,204,68,0.2); }
 
-  .cam-info {
-    flex: 1;
-    min-width: 0;
-  }
+  .cam-info { flex: 1; min-width: 0; }
 
   .cam-name {
     font-size: 16px;
@@ -162,10 +160,7 @@
     color: rgba(255,255,255,0.7);
   }
 
-  .setup-actions {
-    display: flex;
-    gap: 10px;
-  }
+  .setup-actions { display: flex; gap: 10px; }
 
   .setup-btn {
     flex: 1;
@@ -227,9 +222,7 @@
     flex-direction: column;
   }
 
-  .camera-screen.active {
-    display: flex;
-  }
+  .camera-screen.active { display: flex; }
 
   .viewfinder {
     flex: 1;
@@ -289,7 +282,7 @@
     padding: 0 20px;
   }
 
-  .flip-btn {
+  .flip-btn, .settings-btn {
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -301,19 +294,7 @@
     justify-content: center;
   }
 
-  .flip-btn svg { width: 24px; height: 24px; }
-
-  .settings-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255,255,255,0.15);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  .flip-btn svg, .settings-btn svg { width: 24px; height: 24px; }
 
   .shutter-btn {
     width: 72px;
@@ -474,7 +455,7 @@
 
 <!-- ========== SETUP SCREEN ========== -->
 <div class="setup-screen" id="setupScreen">
-  <div class="setup-step">Step 1 of 2</div>
+  <div class="setup-step">Setup</div>
   <h1>Which lens is broken?</h1>
   <p>Tap each camera to preview it. Mark the broken one(s) so we can skip them.</p>
 
@@ -550,6 +531,7 @@
 const STORAGE_KEY = 'brokenlens_config';
 
 let allCameras = [];
+let uniqueCameras = [];
 let setupStream = null;
 let selectedCamIdx = -1;
 let cameraStates = {};
@@ -569,9 +551,8 @@ function showToast(msg) {
 }
 
 function getSavedConfig() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY));
-  } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
+  catch { return null; }
 }
 
 function saveConfig(config) {
@@ -583,36 +564,134 @@ function clearConfig() {
 }
 
 function isFrontCamera(label) {
-  const l = label.toLowerCase();
+  const l = (label || '').toLowerCase();
   return l.includes('front') || l.includes('facetime') || l.includes('user') || l.includes('truedepth');
 }
 
-function getCameraDisplayName(cam, index, allCams) {
-  const label = cam.label || `Camera ${index + 1}`;
-  const l = label.toLowerCase();
+function deduplicateCameras(cameras) {
+  const groups = new Map();
 
-  if (isFrontCamera(label)) return 'Front Camera';
+  for (const cam of cameras) {
+    const label = (cam.label || '').toLowerCase().trim();
+    const facing = isFrontCamera(cam.label) ? 'front' : 'back';
+
+    let groupKey;
+    if (label.includes('ultra') || label.includes('0.5')) {
+      groupKey = 'back-ultrawide';
+    } else if (label.includes('tele') || label.includes('zoom')) {
+      groupKey = 'back-telephoto';
+    } else if (facing === 'front') {
+      groupKey = 'front';
+    } else {
+      const backCams = cameras.filter(c => !isFrontCamera(c.label));
+      const idx = backCams.indexOf(cam);
+      groupKey = `back-${idx}`;
+    }
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, []);
+    }
+    groups.get(groupKey).push(cam);
+  }
+
+  const result = [];
+  for (const [key, cams] of groups) {
+    cams.sort((a, b) => {
+      const labelA = (a.label || '').toLowerCase();
+      const labelB = (b.label || '').toLowerCase();
+      const hasResA = labelA.match(/\d{3,4}x\d{3,4}/) || labelA.includes('high') || labelA.includes('4k');
+      const hasResB = labelB.match(/\d{3,4}x\d{3,4}/) || labelB.includes('high') || labelB.includes('4k');
+      if (hasResA && !hasResB) return -1;
+      if (!hasResA && hasResB) return 1;
+      return 0;
+    });
+    result.push(cams[0]);
+  }
+
+  return result;
+}
+
+function getPhysicalCameras(cameras) {
+  const fronts = cameras.filter(c => isFrontCamera(c.label));
+  const backs = cameras.filter(c => !isFrontCamera(c.label));
+
+  const dedupedFronts = deduplicateByPosition(fronts);
+  const dedupedBacks = deduplicateByPosition(backs);
+
+  return [...dedupedBacks, ...dedupedFronts];
+}
+
+function deduplicateByPosition(cameras) {
+  if (cameras.length <= 1) return cameras;
+
+  const seen = new Map();
+  for (const cam of cameras) {
+    const label = (cam.label || '').toLowerCase();
+    const cleaned = label.replace(/\s*\(.*?\)\s*/g, '').replace(/\d{3,4}x\d{3,4}/g, '').replace(/high|low|medium/gi, '').trim();
+
+    if (!seen.has(cleaned)) {
+      seen.set(cleaned, cam);
+    }
+  }
+
+  if (seen.size === cameras.length && cameras.length > 3) {
+    const unique = [];
+    const labels = new Set();
+    for (const cam of cameras) {
+      const base = (cam.label || '').split('(')[0].trim().toLowerCase();
+      if (!labels.has(base)) {
+        labels.add(base);
+        unique.push(cam);
+      }
+    }
+    return unique.length > 0 ? unique : [cameras[0]];
+  }
+
+  return [...seen.values()];
+}
+
+function getCameraDisplayName(cam, allCams) {
+  if (isFrontCamera(cam.label)) return 'Front Camera';
 
   const backCams = allCams.filter(c => !isFrontCamera(c.label));
   const backIdx = backCams.indexOf(cam);
 
-  if (backCams.length === 1) return 'Back Camera';
-  if (backCams.length === 2) {
-    return backIdx === 0 ? 'Back Camera 1' : 'Back Camera 2';
-  }
+  if (backCams.length === 1) return 'Main Camera (1x)';
+
+  const label = (cam.label || '').toLowerCase();
+  if (label.includes('ultra') || label.includes('0.5')) return 'Ultra Wide (0.5x)';
+  if (label.includes('tele') || label.includes('zoom')) return 'Telephoto (3x)';
+
   if (backCams.length === 3) {
-    if (backIdx === 0) return 'Back Camera 1 (likely 0.5x)';
-    if (backIdx === 1) return 'Back Camera 2 (likely 1x)';
-    if (backIdx === 2) return 'Back Camera 3 (likely 3x)';
+    if (backIdx === 0) return 'Ultra Wide (0.5x)';
+    if (backIdx === 1) return 'Main Camera (1x)';
+    if (backIdx === 2) return 'Telephoto (3x)';
   }
+  if (backCams.length === 2) {
+    if (backIdx === 0) return 'Main Camera (1x)';
+    if (backIdx === 1) return 'Ultra Wide (0.5x)';
+  }
+
   return `Back Camera ${backIdx + 1}`;
 }
 
 function getCameraShortName(cam, allWorking) {
-  const label = cam.label || '';
-  if (isFrontCamera(label)) return 'Front';
+  if (isFrontCamera(cam.label)) return 'Front';
   const backs = allWorking.filter(c => !isFrontCamera(c.label));
   if (backs.length === 1) return 'Back';
+
+  const label = (cam.label || '').toLowerCase();
+  if (label.includes('ultra') || label.includes('0.5')) return '0.5x';
+  if (label.includes('tele') || label.includes('zoom')) return '3x';
+
+  const allBacks = uniqueCameras.filter(c => !isFrontCamera(c.label));
+  const globalIdx = allBacks.indexOf(cam);
+  if (allBacks.length === 3) {
+    if (globalIdx === 0) return '0.5x';
+    if (globalIdx === 1) return '1x';
+    if (globalIdx === 2) return '3x';
+  }
+
   const idx = backs.indexOf(cam);
   return `Cam ${idx + 1}`;
 }
@@ -621,9 +700,7 @@ async function enumerateAllCameras() {
   try {
     const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
     tempStream.getTracks().forEach(t => t.stop());
-  } catch {
-    return [];
-  }
+  } catch { return []; }
   const devices = await navigator.mediaDevices.enumerateDevices();
   return devices.filter(d => d.kind === 'videoinput');
 }
@@ -643,10 +720,9 @@ async function startSetup() {
     return;
   }
 
+  uniqueCameras = getPhysicalCameras(allCameras);
   cameraStates = {};
-  allCameras.forEach((cam, i) => {
-    cameraStates[cam.deviceId] = 'unknown';
-  });
+  uniqueCameras.forEach(cam => { cameraStates[cam.deviceId] = 'unknown'; });
 
   renderCameraList();
   updateDoneButton();
@@ -656,7 +732,7 @@ function renderCameraList() {
   const cameraList = document.getElementById('cameraList');
   cameraList.innerHTML = '';
 
-  allCameras.forEach((cam, i) => {
+  uniqueCameras.forEach((cam, i) => {
     const state = cameraStates[cam.deviceId];
     const div = document.createElement('div');
     div.className = 'camera-item' + (selectedCamIdx === i ? ' testing' : '') + (state === 'broken' ? ' broken' : '') + (state === 'working' ? ' working' : '');
@@ -667,7 +743,7 @@ function renderCameraList() {
     div.innerHTML = `
       <div class="cam-icon">${icon}</div>
       <div class="cam-info">
-        <div class="cam-name">${getCameraDisplayName(cam, i, allCameras)}</div>
+        <div class="cam-name">${getCameraDisplayName(cam, uniqueCameras)}</div>
         <div class="cam-label">${cam.label || 'Unknown'}</div>
       </div>
       <span class="cam-status">${statusText}</span>
@@ -680,7 +756,7 @@ function renderCameraList() {
 
 async function selectCameraForTest(index) {
   selectedCamIdx = index;
-  const cam = allCameras[index];
+  const cam = uniqueCameras[index];
 
   const setupVideo = document.getElementById('setupVideo');
   const label = document.getElementById('setupPreviewLabel');
@@ -700,7 +776,7 @@ async function selectCameraForTest(index) {
       audio: false
     });
     setupVideo.srcObject = setupStream;
-    label.textContent = getCameraDisplayName(cam, index, allCameras);
+    label.textContent = getCameraDisplayName(cam, uniqueCameras);
   } catch {
     label.textContent = 'Could not access this camera';
   }
@@ -710,26 +786,25 @@ async function selectCameraForTest(index) {
 
 function markCamera(state) {
   if (selectedCamIdx < 0) return;
-  const cam = allCameras[selectedCamIdx];
+  const cam = uniqueCameras[selectedCamIdx];
   cameraStates[cam.deviceId] = state;
   renderCameraList();
   updateDoneButton();
 }
 
 function updateDoneButton() {
-  const allMarked = allCameras.every(cam => cameraStates[cam.deviceId] !== 'unknown');
-  const hasWorking = allCameras.some(cam => cameraStates[cam.deviceId] === 'working');
+  const allMarked = uniqueCameras.every(cam => cameraStates[cam.deviceId] !== 'unknown');
+  const hasWorking = uniqueCameras.some(cam => cameraStates[cam.deviceId] === 'working');
   const doneBtn = document.getElementById('doneBtn');
 
   if (allMarked && hasWorking) {
     doneBtn.disabled = false;
     doneBtn.textContent = 'Start Camera';
-    document.getElementById('setupStep') && (document.getElementById('setupStep').textContent = 'All set!');
   } else if (allMarked && !hasWorking) {
     doneBtn.disabled = true;
     doneBtn.textContent = 'Mark at least one as working';
   } else {
-    const remaining = allCameras.filter(cam => cameraStates[cam.deviceId] === 'unknown').length;
+    const remaining = uniqueCameras.filter(cam => cameraStates[cam.deviceId] === 'unknown').length;
     doneBtn.disabled = true;
     doneBtn.textContent = `${remaining} camera(s) left to mark`;
   }
@@ -742,8 +817,8 @@ function finishSetup() {
   }
 
   const config = {
-    broken: allCameras.filter(c => cameraStates[c.deviceId] === 'broken').map(c => c.deviceId),
-    working: allCameras.filter(c => cameraStates[c.deviceId] === 'working').map(c => c.deviceId),
+    broken: uniqueCameras.filter(c => cameraStates[c.deviceId] === 'broken').map(c => c.deviceId),
+    working: uniqueCameras.filter(c => cameraStates[c.deviceId] === 'working').map(c => c.deviceId),
     timestamp: Date.now()
   };
   saveConfig(config);
@@ -760,20 +835,19 @@ async function launchCamera(config) {
 
   if (allCameras.length === 0) {
     allCameras = await enumerateAllCameras();
+    uniqueCameras = getPhysicalCameras(allCameras);
   }
 
   const workingIds = new Set(config.working);
 
-  workingBackCameras = allCameras.filter(c => workingIds.has(c.deviceId) && !isFrontCamera(c.label));
-  workingFrontCameras = allCameras.filter(c => workingIds.has(c.deviceId) && isFrontCamera(c.label));
+  workingBackCameras = uniqueCameras.filter(c => workingIds.has(c.deviceId) && !isFrontCamera(c.label));
+  workingFrontCameras = uniqueCameras.filter(c => workingIds.has(c.deviceId) && isFrontCamera(c.label));
 
   isFront = false;
   const startCam = workingBackCameras[0] || workingFrontCameras[0];
   if (workingBackCameras.length === 0 && workingFrontCameras.length > 0) isFront = true;
 
-  if (startCam) {
-    await switchCamera(startCam.deviceId);
-  }
+  if (startCam) await switchCamera(startCam.deviceId);
   buildLensButtons();
 }
 
@@ -782,10 +856,10 @@ function buildLensButtons() {
   lensRow.innerHTML = '';
   const cameras = isFront ? workingFrontCameras : workingBackCameras;
 
-  cameras.forEach((cam, i) => {
+  cameras.forEach(cam => {
     const btn = document.createElement('button');
     btn.className = 'lens-btn' + (cam.deviceId === activeDeviceId ? ' active' : '');
-    btn.textContent = getCameraShortName(cam, isFront ? workingFrontCameras : workingBackCameras);
+    btn.textContent = getCameraShortName(cam, cameras);
     btn.addEventListener('click', () => switchCamera(cam.deviceId));
     lensRow.appendChild(btn);
   });
@@ -811,7 +885,7 @@ async function switchCamera(deviceId) {
 
     const track = currentStream.getVideoTracks()[0];
     const settings = track.getSettings();
-    const cam = allCameras.find(c => c.deviceId === deviceId);
+    const cam = uniqueCameras.find(c => c.deviceId === deviceId);
     const allWorking = isFront ? workingFrontCameras : workingBackCameras;
     statusText.textContent = cam ? getCameraShortName(cam, allWorking) : 'Ready';
     document.getElementById('resText').textContent = `${settings.width || '?'}x${settings.height || '?'}`;
@@ -834,12 +908,7 @@ function takePhoto() {
   canvas.height = settings.height || video.videoHeight;
 
   const ctx = canvas.getContext('2d');
-  if (isFront) {
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-  }
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   const flash = document.getElementById('flash');
   flash.classList.add('active');
@@ -893,10 +962,7 @@ document.getElementById('markWorking').addEventListener('click', () => markCamer
 document.getElementById('doneBtn').addEventListener('click', finishSetup);
 
 document.getElementById('resetBtn').addEventListener('click', () => {
-  if (currentStream) {
-    currentStream.getTracks().forEach(t => t.stop());
-    currentStream = null;
-  }
+  if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
   activeDeviceId = null;
   selectedCamIdx = -1;
   clearConfig();
@@ -904,10 +970,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 });
 
 document.getElementById('settingsBtn').addEventListener('click', () => {
-  if (currentStream) {
-    currentStream.getTracks().forEach(t => t.stop());
-    currentStream = null;
-  }
+  if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
   activeDeviceId = null;
   selectedCamIdx = -1;
   clearConfig();
@@ -941,7 +1004,8 @@ async function init() {
   const config = getSavedConfig();
   if (config && config.working && config.working.length > 0) {
     allCameras = await enumerateAllCameras();
-    const currentIds = new Set(allCameras.map(c => c.deviceId));
+    uniqueCameras = getPhysicalCameras(allCameras);
+    const currentIds = new Set(uniqueCameras.map(c => c.deviceId));
     const configStillValid = config.working.every(id => currentIds.has(id));
 
     if (configStillValid) {
