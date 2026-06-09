@@ -150,6 +150,10 @@
     object-fit: cover;
   }
 
+  .setup-preview video.mirrored {
+    transform: scaleX(-1);
+  }
+
   .setup-preview-label {
     position: absolute;
     bottom: 8px;
@@ -318,6 +322,29 @@
     align-items: center;
     justify-content: center;
   }
+
+  .flash-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: 16px;
+    z-index: 20;
+  }
+
+  .flash-btn.flash-on {
+    background: rgba(245,197,24,0.3);
+    border: 2px solid #f5c518;
+  }
+
+  .flash-btn svg { width: 22px; height: 22px; }
 
   .shutter-btn {
     width: 72px;
@@ -506,6 +533,12 @@
       <span class="status-text" id="statusText"></span>
       <span class="status-text" id="resText"></span>
     </div>
+    <!-- Flash toggle button -->
+    <button class="flash-btn" id="flashBtn" title="Toggle flash">
+      <svg id="flashIcon" viewBox="0 0 24 24" fill="#fff">
+        <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
+      </svg>
+    </button>
   </div>
 
   <div class="controls">
@@ -564,6 +597,7 @@ let activeDeviceId = null;
 let isFront = false;
 let workingBackCameras = [];
 let workingFrontCameras = [];
+let flashEnabled = false;
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -630,6 +664,39 @@ async function enumerateAllCameras() {
   const devices = await navigator.mediaDevices.enumerateDevices();
   return devices.filter(d => d.kind === 'videoinput');
 }
+
+// ============ FLASH TOGGLE ============
+
+function updateFlashButton() {
+  const btn = document.getElementById('flashBtn');
+  const icon = document.getElementById('flashIcon');
+  if (flashEnabled) {
+    btn.classList.add('flash-on');
+    icon.innerHTML = '<path d="M7 2v11h3v9l7-12h-4l4-8z"/>';
+    icon.style.fill = '#f5c518';
+  } else {
+    btn.classList.remove('flash-on');
+    icon.innerHTML = '<path d="M7 2v11h3v9l7-12h-4l4-8z"/><line x1="2" y1="2" x2="22" y2="22" stroke="#fff" stroke-width="2"/>';
+    icon.style.fill = '#fff';
+  }
+}
+
+async function applyTorch(on) {
+  if (!currentStream) return;
+  const track = currentStream.getVideoTracks()[0];
+  if (!track) return;
+  const caps = track.getCapabilities();
+  if (!caps.torch) return;
+  try {
+    await track.applyConstraints({ advanced: [{ torch: on }] });
+  } catch {}
+}
+
+document.getElementById('flashBtn').addEventListener('click', () => {
+  flashEnabled = !flashEnabled;
+  updateFlashButton();
+  applyTorch(flashEnabled);
+});
 
 // ============ SETUP ============
 
@@ -703,6 +770,14 @@ async function selectCameraForTest(index) {
       audio: false
     });
     setupVideo.srcObject = setupStream;
+
+    // Mirror front camera in setup preview too
+    if (isFrontCamera(cam.label)) {
+      setupVideo.classList.add('mirrored');
+    } else {
+      setupVideo.classList.remove('mirrored');
+    }
+
     label.textContent = getCameraDisplayName(cam, index, allCameras);
   } catch {
     label.textContent = 'Could not access this camera';
@@ -777,6 +852,7 @@ async function launchCamera(config) {
     await switchCamera(startCam.deviceId);
   }
   buildLensButtons();
+  updateFlashButton();
 }
 
 function buildLensButtons() {
@@ -803,6 +879,10 @@ async function switchCamera(deviceId) {
     currentStream.getTracks().forEach(t => t.stop());
   }
 
+  // Reset flash when switching cameras
+  flashEnabled = false;
+  updateFlashButton();
+
   try {
     currentStream = await navigator.mediaDevices.getUserMedia({
       video: { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } },
@@ -826,6 +906,9 @@ async function switchCamera(deviceId) {
     const allWorking = isFront ? workingFrontCameras : workingBackCameras;
     statusText.textContent = cam ? getCameraShortName(cam, allWorking) : 'Ready';
     document.getElementById('resText').textContent = `${settings.width || '?'}x${settings.height || '?'}`;
+
+    // Hide flash button for front camera (no torch on front)
+    document.getElementById('flashBtn').style.display = isFront ? 'none' : 'flex';
 
     buildLensButtons();
   } catch {
@@ -853,6 +936,7 @@ function takePhoto() {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
 
+  // Flash effect on screen (always shown as shutter feedback)
   const flash = document.getElementById('flash');
   flash.classList.add('active');
   setTimeout(() => flash.classList.remove('active'), 150);
@@ -911,6 +995,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   }
   activeDeviceId = null;
   selectedCamIdx = -1;
+  flashEnabled = false;
   clearConfig();
   startSetup();
 });
@@ -922,6 +1007,7 @@ document.getElementById('settingsBtn').addEventListener('click', () => {
   }
   activeDeviceId = null;
   selectedCamIdx = -1;
+  flashEnabled = false;
   clearConfig();
   startSetup();
 });
