@@ -244,6 +244,10 @@
     object-fit: cover;
   }
 
+  .viewfinder video.mirrored {
+    transform: scaleX(-1);
+  }
+
   .controls {
     background: #1a1a1a;
     padding: 20px 16px;
@@ -468,9 +472,6 @@
   }
 
   .toast.show { opacity: 1; }
- #video.mirrored {
-  transform: scaleX(-1);
-}
 </style>
 </head>
 <body>
@@ -592,7 +593,6 @@ function isFrontCamera(label) {
 
 function getCameraDisplayName(cam, index, allCams) {
   const label = cam.label || `Camera ${index + 1}`;
-  const l = label.toLowerCase();
 
   if (isFrontCamera(label)) return 'Front Camera';
 
@@ -727,7 +727,6 @@ function updateDoneButton() {
   if (allMarked && hasWorking) {
     doneBtn.disabled = false;
     doneBtn.textContent = 'Start Camera';
-    document.getElementById('setupStep') && (document.getElementById('setupStep').textContent = 'All set!');
   } else if (allMarked && !hasWorking) {
     doneBtn.disabled = true;
     doneBtn.textContent = 'Mark at least one as working';
@@ -809,14 +808,17 @@ async function switchCamera(deviceId) {
       video: { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } },
       audio: false
     });
-    document.getElementById('video').srcObject = currentStream;
-   const video = document.getElementById('video');
-if (isFront) {
-  video.classList.add('mirrored');
-} else {
-  video.classList.remove('mirrored');
-}
+
+    const video = document.getElementById('video');
+    video.srcObject = currentStream;
     activeDeviceId = deviceId;
+
+    // Mirror front camera so it looks like a real mirror
+    if (isFront) {
+      video.classList.add('mirrored');
+    } else {
+      video.classList.remove('mirrored');
+    }
 
     const track = currentStream.getVideoTracks()[0];
     const settings = track.getSettings();
@@ -842,13 +844,14 @@ function takePhoto() {
   canvas.width = settings.width || video.videoWidth;
   canvas.height = settings.height || video.videoHeight;
 
-const ctx = canvas.getContext('2d');
-if (isFront) {
-  ctx.translate(canvas.width, 0);
-  ctx.scale(-1, 1);
-}
-ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const ctx = canvas.getContext('2d');
+  // Mirror the saved photo too so it matches what you saw in preview
+  if (isFront) {
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   const flash = document.getElementById('flash');
   flash.classList.add('active');
