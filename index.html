@@ -23,7 +23,6 @@
     -webkit-user-select: none;
   }
 
-  /* ---- SETUP SCREEN ---- */
   .setup-screen {
     height: 100%;
     display: flex;
@@ -106,10 +105,7 @@
   .camera-item.broken .cam-icon { background: rgba(255,68,68,0.2); }
   .camera-item.working .cam-icon { background: rgba(68,204,68,0.2); }
 
-  .cam-info {
-    flex: 1;
-    min-width: 0;
-  }
+  .cam-info { flex: 1; min-width: 0; }
 
   .cam-name {
     font-size: 16px;
@@ -166,10 +162,7 @@
     color: rgba(255,255,255,0.7);
   }
 
-  .setup-actions {
-    display: flex;
-    gap: 10px;
-  }
+  .setup-actions { display: flex; gap: 10px; }
 
   .setup-btn {
     flex: 1;
@@ -224,16 +217,13 @@
     text-align: center;
   }
 
-  /* ---- CAMERA SCREEN ---- */
   .camera-screen {
     height: 100%;
     display: none;
     flex-direction: column;
   }
 
-  .camera-screen.active {
-    display: flex;
-  }
+  .camera-screen.active { display: flex; }
 
   .viewfinder {
     flex: 1;
@@ -464,24 +454,6 @@
 
   .share-btn svg { width: 22px; height: 22px; fill: #fff; }
 
-  .status-bar {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    padding: 12px 16px;
-    padding-top: max(12px, env(safe-area-inset-top));
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
-    z-index: 10;
-  }
-
-  .status-text {
-    font-size: 12px;
-    color: rgba(255,255,255,0.7);
-    font-weight: 500;
-  }
-
   .toast {
     position: fixed;
     bottom: 120px;
@@ -503,7 +475,6 @@
 </head>
 <body>
 
-<!-- ========== SETUP SCREEN ========== -->
 <div class="setup-screen" id="setupScreen">
   <div class="setup-step">Step 1 of 2</div>
   <h1>Which lens is broken?</h1>
@@ -525,15 +496,9 @@
   <button class="btn-reset" id="resetBtn" style="display:none">Reset setup</button>
 </div>
 
-<!-- ========== CAMERA SCREEN ========== -->
 <div class="camera-screen" id="cameraScreen">
   <div class="viewfinder">
     <video id="video" autoplay playsinline muted></video>
-    <div class="status-bar">
-      <span class="status-text" id="statusText"></span>
-      <span class="status-text" id="resText"></span>
-    </div>
-    <!-- Flash toggle button -->
     <button class="flash-btn" id="flashBtn" title="Toggle flash">
       <svg id="flashIcon" viewBox="0 0 24 24" fill="#fff">
         <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
@@ -586,7 +551,23 @@
 <script>
 const STORAGE_KEY = 'brokenlens_config';
 
+// ===== HARDCODED CAMERA FILTER FOR YOUR IPHONE =====
+// Back cameras to show: index 0 (1x main), index 2 (0.5x wide), index 5 (3x tele)
+// All others are hidden
+const ALLOWED_BACK_INDICES = [0, 2, 5];
+const BACK_CAMERA_NAMES = {
+  0: 'Main (1x)',
+  2: 'Wide (0.5x)',
+  5: 'Tele (3x)'
+};
+const LENS_BTN_LABELS = {
+  0: '1x',
+  2: '0.5x',
+  5: '3x'
+};
+
 let allCameras = [];
+let visibleCameras = []; // only the ones we show in setup
 let setupStream = null;
 let selectedCamIdx = -1;
 let cameraStates = {};
@@ -607,9 +588,8 @@ function showToast(msg) {
 }
 
 function getSavedConfig() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY));
-  } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
+  catch { return null; }
 }
 
 function saveConfig(config) {
@@ -625,47 +605,38 @@ function isFrontCamera(label) {
   return l.includes('front') || l.includes('facetime') || l.includes('user') || l.includes('truedepth');
 }
 
-function getCameraDisplayName(cam, index, allCams) {
-  const label = cam.label || `Camera ${index + 1}`;
-
-  if (isFrontCamera(label)) return 'Front Camera';
-
-  const backCams = allCams.filter(c => !isFrontCamera(c.label));
-  const backIdx = backCams.indexOf(cam);
-
-  if (backCams.length === 1) return 'Back Camera';
-  if (backCams.length === 2) {
-    return backIdx === 0 ? 'Back Camera 1' : 'Back Camera 2';
-  }
-  if (backCams.length === 3) {
-    if (backIdx === 0) return 'Back Camera 1 (likely 0.5x)';
-    if (backIdx === 1) return 'Back Camera 2 (likely 1x)';
-    if (backIdx === 2) return 'Back Camera 3 (likely 3x)';
-  }
-  return `Back Camera ${backIdx + 1}`;
+function getVisibleCameras(all) {
+  const front = all.filter(c => isFrontCamera(c.label));
+  const back = all.filter(c => !isFrontCamera(c.label));
+  const allowedBack = ALLOWED_BACK_INDICES.map(i => back[i]).filter(Boolean);
+  return [...front, ...allowedBack];
 }
 
-function getCameraShortName(cam, allWorking) {
-  const label = cam.label || '';
-  if (isFrontCamera(label)) return 'Front';
-  const backs = allWorking.filter(c => !isFrontCamera(c.label));
-  if (backs.length === 1) return 'Back';
-  const idx = backs.indexOf(cam);
-  return `Cam ${idx + 1}`;
+function getDisplayName(cam, visible) {
+  if (isFrontCamera(cam.label)) return 'Front Camera';
+  const backs = visible.filter(c => !isFrontCamera(c.label));
+  const allBack = allCameras.filter(c => !isFrontCamera(c.label));
+  const origIdx = allBack.indexOf(cam);
+  return BACK_CAMERA_NAMES[origIdx] || `Back Camera`;
+}
+
+function getLensBtnLabel(cam) {
+  if (isFrontCamera(cam.label)) return 'Front';
+  const allBack = allCameras.filter(c => !isFrontCamera(c.label));
+  const origIdx = allBack.indexOf(cam);
+  return LENS_BTN_LABELS[origIdx] || 'Back';
 }
 
 async function enumerateAllCameras() {
   try {
     const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
     tempStream.getTracks().forEach(t => t.stop());
-  } catch {
-    return [];
-  }
+  } catch { return []; }
   const devices = await navigator.mediaDevices.enumerateDevices();
   return devices.filter(d => d.kind === 'videoinput');
 }
 
-// ============ FLASH TOGGLE ============
+// ============ FLASH ============
 
 function updateFlashButton() {
   const btn = document.getElementById('flashBtn');
@@ -687,9 +658,7 @@ async function applyTorch(on) {
   if (!track) return;
   const caps = track.getCapabilities();
   if (!caps.torch) return;
-  try {
-    await track.applyConstraints({ advanced: [{ torch: on }] });
-  } catch {}
+  try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch {}
 }
 
 document.getElementById('flashBtn').addEventListener('click', () => {
@@ -713,8 +682,10 @@ async function startSetup() {
     return;
   }
 
+  visibleCameras = getVisibleCameras(allCameras);
+
   cameraStates = {};
-  allCameras.forEach((cam, i) => {
+  visibleCameras.forEach(cam => {
     cameraStates[cam.deviceId] = 'unknown';
   });
 
@@ -726,10 +697,13 @@ function renderCameraList() {
   const cameraList = document.getElementById('cameraList');
   cameraList.innerHTML = '';
 
-  allCameras.forEach((cam, i) => {
+  visibleCameras.forEach((cam, i) => {
     const state = cameraStates[cam.deviceId];
     const div = document.createElement('div');
-    div.className = 'camera-item' + (selectedCamIdx === i ? ' testing' : '') + (state === 'broken' ? ' broken' : '') + (state === 'working' ? ' working' : '');
+    div.className = 'camera-item'
+      + (selectedCamIdx === i ? ' testing' : '')
+      + (state === 'broken' ? ' broken' : '')
+      + (state === 'working' ? ' working' : '');
 
     const icon = isFrontCamera(cam.label) ? '🤳' : '📷';
     const statusText = state === 'broken' ? 'BROKEN' : state === 'working' ? 'OK' : 'Tap to test';
@@ -737,7 +711,7 @@ function renderCameraList() {
     div.innerHTML = `
       <div class="cam-icon">${icon}</div>
       <div class="cam-info">
-        <div class="cam-name">${getCameraDisplayName(cam, i, allCameras)}</div>
+        <div class="cam-name">${getDisplayName(cam, visibleCameras)}</div>
         <div class="cam-label">${cam.label || 'Unknown'}</div>
       </div>
       <span class="cam-status">${statusText}</span>
@@ -750,7 +724,7 @@ function renderCameraList() {
 
 async function selectCameraForTest(index) {
   selectedCamIdx = index;
-  const cam = allCameras[index];
+  const cam = visibleCameras[index];
 
   const setupVideo = document.getElementById('setupVideo');
   const label = document.getElementById('setupPreviewLabel');
@@ -771,14 +745,13 @@ async function selectCameraForTest(index) {
     });
     setupVideo.srcObject = setupStream;
 
-    // Mirror front camera in setup preview too
     if (isFrontCamera(cam.label)) {
       setupVideo.classList.add('mirrored');
     } else {
       setupVideo.classList.remove('mirrored');
     }
 
-    label.textContent = getCameraDisplayName(cam, index, allCameras);
+    label.textContent = getDisplayName(cam, visibleCameras);
   } catch {
     label.textContent = 'Could not access this camera';
   }
@@ -788,15 +761,15 @@ async function selectCameraForTest(index) {
 
 function markCamera(state) {
   if (selectedCamIdx < 0) return;
-  const cam = allCameras[selectedCamIdx];
+  const cam = visibleCameras[selectedCamIdx];
   cameraStates[cam.deviceId] = state;
   renderCameraList();
   updateDoneButton();
 }
 
 function updateDoneButton() {
-  const allMarked = allCameras.every(cam => cameraStates[cam.deviceId] !== 'unknown');
-  const hasWorking = allCameras.some(cam => cameraStates[cam.deviceId] === 'working');
+  const allMarked = visibleCameras.every(cam => cameraStates[cam.deviceId] !== 'unknown');
+  const hasWorking = visibleCameras.some(cam => cameraStates[cam.deviceId] === 'working');
   const doneBtn = document.getElementById('doneBtn');
 
   if (allMarked && hasWorking) {
@@ -806,7 +779,7 @@ function updateDoneButton() {
     doneBtn.disabled = true;
     doneBtn.textContent = 'Mark at least one as working';
   } else {
-    const remaining = allCameras.filter(cam => cameraStates[cam.deviceId] === 'unknown').length;
+    const remaining = visibleCameras.filter(cam => cameraStates[cam.deviceId] === 'unknown').length;
     doneBtn.disabled = true;
     doneBtn.textContent = `${remaining} camera(s) left to mark`;
   }
@@ -819,8 +792,8 @@ function finishSetup() {
   }
 
   const config = {
-    broken: allCameras.filter(c => cameraStates[c.deviceId] === 'broken').map(c => c.deviceId),
-    working: allCameras.filter(c => cameraStates[c.deviceId] === 'working').map(c => c.deviceId),
+    broken: visibleCameras.filter(c => cameraStates[c.deviceId] === 'broken').map(c => c.deviceId),
+    working: visibleCameras.filter(c => cameraStates[c.deviceId] === 'working').map(c => c.deviceId),
     timestamp: Date.now()
   };
   saveConfig(config);
@@ -837,20 +810,19 @@ async function launchCamera(config) {
 
   if (allCameras.length === 0) {
     allCameras = await enumerateAllCameras();
+    visibleCameras = getVisibleCameras(allCameras);
   }
 
   const workingIds = new Set(config.working);
 
-  workingBackCameras = allCameras.filter(c => workingIds.has(c.deviceId) && !isFrontCamera(c.label));
-  workingFrontCameras = allCameras.filter(c => workingIds.has(c.deviceId) && isFrontCamera(c.label));
+  workingBackCameras = visibleCameras.filter(c => workingIds.has(c.deviceId) && !isFrontCamera(c.label));
+  workingFrontCameras = visibleCameras.filter(c => workingIds.has(c.deviceId) && isFrontCamera(c.label));
 
   isFront = false;
   const startCam = workingBackCameras[0] || workingFrontCameras[0];
   if (workingBackCameras.length === 0 && workingFrontCameras.length > 0) isFront = true;
 
-  if (startCam) {
-    await switchCamera(startCam.deviceId);
-  }
+  if (startCam) await switchCamera(startCam.deviceId);
   buildLensButtons();
   updateFlashButton();
 }
@@ -860,10 +832,10 @@ function buildLensButtons() {
   lensRow.innerHTML = '';
   const cameras = isFront ? workingFrontCameras : workingBackCameras;
 
-  cameras.forEach((cam, i) => {
+  cameras.forEach((cam) => {
     const btn = document.createElement('button');
     btn.className = 'lens-btn' + (cam.deviceId === activeDeviceId ? ' active' : '');
-    btn.textContent = getCameraShortName(cam, isFront ? workingFrontCameras : workingBackCameras);
+    btn.textContent = getLensBtnLabel(cam);
     btn.addEventListener('click', () => switchCamera(cam.deviceId));
     lensRow.appendChild(btn);
   });
@@ -872,14 +844,8 @@ function buildLensButtons() {
 async function switchCamera(deviceId) {
   if (deviceId === activeDeviceId) return;
 
-  const statusText = document.getElementById('statusText');
-  statusText.textContent = 'Switching...';
+  if (currentStream) currentStream.getTracks().forEach(t => t.stop());
 
-  if (currentStream) {
-    currentStream.getTracks().forEach(t => t.stop());
-  }
-
-  // Reset flash when switching cameras
   flashEnabled = false;
   updateFlashButton();
 
@@ -893,26 +859,17 @@ async function switchCamera(deviceId) {
     video.srcObject = currentStream;
     activeDeviceId = deviceId;
 
-    // Mirror front camera so it looks like a real mirror
     if (isFront) {
       video.classList.add('mirrored');
     } else {
       video.classList.remove('mirrored');
     }
 
-    const track = currentStream.getVideoTracks()[0];
-    const settings = track.getSettings();
-    const cam = allCameras.find(c => c.deviceId === deviceId);
-    const allWorking = isFront ? workingFrontCameras : workingBackCameras;
-    statusText.textContent = cam ? getCameraShortName(cam, allWorking) : 'Ready';
-    document.getElementById('resText').textContent = `${settings.width || '?'}x${settings.height || '?'}`;
-
-    // Hide flash button for front camera (no torch on front)
+    // Hide flash for front camera
     document.getElementById('flashBtn').style.display = isFront ? 'none' : 'flex';
 
     buildLensButtons();
   } catch {
-    statusText.textContent = 'Error';
     showToast('Could not access this camera');
   }
 }
@@ -928,7 +885,6 @@ function takePhoto() {
   canvas.height = settings.height || video.videoHeight;
 
   const ctx = canvas.getContext('2d');
-  // Mirror the saved photo too so it matches what you saw in preview
   if (isFront) {
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -936,7 +892,6 @@ function takePhoto() {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-  // Flash effect on screen (always shown as shutter feedback)
   const flash = document.getElementById('flash');
   flash.classList.add('active');
   setTimeout(() => flash.classList.remove('active'), 150);
@@ -989,27 +944,15 @@ document.getElementById('markWorking').addEventListener('click', () => markCamer
 document.getElementById('doneBtn').addEventListener('click', finishSetup);
 
 document.getElementById('resetBtn').addEventListener('click', () => {
-  if (currentStream) {
-    currentStream.getTracks().forEach(t => t.stop());
-    currentStream = null;
-  }
-  activeDeviceId = null;
-  selectedCamIdx = -1;
-  flashEnabled = false;
-  clearConfig();
-  startSetup();
+  if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
+  activeDeviceId = null; selectedCamIdx = -1; flashEnabled = false;
+  clearConfig(); startSetup();
 });
 
 document.getElementById('settingsBtn').addEventListener('click', () => {
-  if (currentStream) {
-    currentStream.getTracks().forEach(t => t.stop());
-    currentStream = null;
-  }
-  activeDeviceId = null;
-  selectedCamIdx = -1;
-  flashEnabled = false;
-  clearConfig();
-  startSetup();
+  if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
+  activeDeviceId = null; selectedCamIdx = -1; flashEnabled = false;
+  clearConfig(); startSetup();
 });
 
 document.getElementById('shutterBtn').addEventListener('click', takePhoto);
@@ -1039,9 +982,9 @@ async function init() {
   const config = getSavedConfig();
   if (config && config.working && config.working.length > 0) {
     allCameras = await enumerateAllCameras();
+    visibleCameras = getVisibleCameras(allCameras);
     const currentIds = new Set(allCameras.map(c => c.deviceId));
     const configStillValid = config.working.every(id => currentIds.has(id));
-
     if (configStillValid) {
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('resetBtn').style.display = 'block';
