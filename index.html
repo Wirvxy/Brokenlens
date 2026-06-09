@@ -468,6 +468,9 @@
   }
 
   .toast.show { opacity: 1; }
+ #video.mirrored {
+  transform: scaleX(-1);
+}
 </style>
 </head>
 <body>
@@ -807,6 +810,12 @@ async function switchCamera(deviceId) {
       audio: false
     });
     document.getElementById('video').srcObject = currentStream;
+   const video = document.getElementById('video');
+if (isFront) {
+  video.classList.add('mirrored');
+} else {
+  video.classList.remove('mirrored');
+}
     activeDeviceId = deviceId;
 
     const track = currentStream.getVideoTracks()[0];
@@ -833,13 +842,13 @@ function takePhoto() {
   canvas.width = settings.width || video.videoWidth;
   canvas.height = settings.height || video.videoHeight;
 
-  const ctx = canvas.getContext('2d');
-  if (isFront) {
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-  }
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
+const ctx = canvas.getContext('2d');
+if (isFront) {
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+}
+ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   const flash = document.getElementById('flash');
   flash.classList.add('active');
