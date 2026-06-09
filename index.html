@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ProCam">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.json">
+<title>ProCam</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .viewfinder {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #111;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .controls {
+    background: #1a1a1a;
+    padding: 20px 16px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .lens-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .lens-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lens-btn.active {
+    border-color: #f5c518;
+    background: rgba(245,197,24,0.2);
+    color: #f5c518;
+  }
+
+  .lens-btn:disabled {
+    opacity: 0.3;
+    border-color: #333;
+  }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+
+  .flip-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .flip-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: #fff;
+  }
+
+  .shutter-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.1s;
+  }
+
+  .shutter-btn::after {
+    content: '';
+    position: absolute;
+    top: 4px; left: 4px; right: 4px; bottom: 4px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.1s;
+  }
+
+  .shutter-btn:active::after {
+    transform: scale(0.85);
+  }
+
+  .placeholder-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .flash {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+    transition: opacity 0.05s;
+  }
+
+  .flash.active {
+    opacity: 0.8;
+  }
+
+  .preview-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+  }
+
+  .preview-overlay.active {
+    display: flex;
+  }
+
+  .preview-top {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .preview-image-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .preview-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+  }
+
+  .preview-bottom {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .save-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border-radius: 50px;
+    border: none;
+    background: #f5c518;
+    color: #000;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .save-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: #000;
+  }
+
+  .share-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .share-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: #fff;
+  }
+
+  .status-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 12px 16px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+    z-index: 10;
+  }
+
+  .status-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 500;
+  }
+
+  .error-msg {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 24px;
+    color: rgba(255,255,255,0.8);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(50,50,50,0.95);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="viewfinder">
+  <video id="video" autoplay playsinline muted></video>
+  <div class="status-bar">
+    <span class="status-text" id="statusText">Starting...</span>
+    <span class="status-text" id="resText"></span>
+  </div>
+  <div class="error-msg" id="errorMsg" style="display:none"></div>
+</div>
+
+<div class="controls">
+  <div class="lens-row" id="lensRow"></div>
+  <div class="action-row">
+    <button class="flip-btn" id="flipBtn" title="Flip camera">
+      <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5h1.5c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5H17c0 2.76-2.24 5-5 5zm0-10c-2.76 0-5 2.24-5 5H5.5c0-1.93-1.57-3.5-3.5-3.5S-1.5 9.07-1.5 11H-3c0-2.76 2.24-5 5-5z"/><path d="M9 12l3-3 3 3M15 12l-3 3-3-3" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+    </button>
+    <button class="shutter-btn" id="shutterBtn" title="Take photo"></button>
+    <div class="placeholder-btn"></div>
+  </div>
+</div>
+
+<div class="flash" id="flash"></div>
+
+<div class="preview-overlay" id="preview">
+  <div class="preview-top">
+    <button class="close-btn" id="closePreview">&times;</button>
+  </div>
+  <div class="preview-image-container">
+    <img id="previewImg" src="" alt="Photo">
+  </div>
+  <div class="preview-bottom">
+    <button class="save-btn" id="saveBtn">
+      <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      Save
+    </button>
+    <button class="share-btn" id="shareBtn">
+      <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const lensRow = document.getElementById('lensRow');
+const shutterBtn = document.getElementById('shutterBtn');
+const flipBtn = document.getElementById('flipBtn');
+const flash = document.getElementById('flash');
+const preview = document.getElementById('preview');
+const previewImg = document.getElementById('previewImg');
+const closePreview = document.getElementById('closePreview');
+const saveBtn = document.getElementById('saveBtn');
+const shareBtn = document.getElementById('shareBtn');
+const statusText = document.getElementById('statusText');
+const resText = document.getElementById('resText');
+const errorMsg = document.getElementById('errorMsg');
+const toast = document.getElementById('toast');
+
+let currentStream = null;
+let currentBlob = null;
+let allCameras = [];
+let backCameras = [];
+let frontCameras = [];
+let activeDeviceId = null;
+let isFront = false;
+
+const MAIN_BACK_KEYWORDS = ['back camera', 'rear camera', 'camera0', 'facing back'];
+const ULTRA_WIDE_KEYWORDS = ['ultra', '0.5', 'wide'];
+const TELEPHOTO_KEYWORDS = ['tele', 'zoom', '3x', '2x'];
+
+function classifyCamera(label) {
+  const l = label.toLowerCase();
+  if (ULTRA_WIDE_KEYWORDS.some(k => l.includes(k))) return 'ultrawide';
+  if (TELEPHOTO_KEYWORDS.some(k => l.includes(k))) return 'telephoto';
+  return 'wide';
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+async function enumerateCameras() {
+  try {
+    const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    tempStream.getTracks().forEach(t => t.stop());
+  } catch (e) {
+    errorMsg.style.display = 'block';
+    errorMsg.textContent = 'Camera access denied. Please allow camera access in Settings > Safari > Camera.';
+    return false;
+  }
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  allCameras = devices.filter(d => d.kind === 'videoinput');
+
+  if (allCameras.length === 0) {
+    errorMsg.style.display = 'block';
+    errorMsg.textContent = 'No cameras found on this device.';
+    return false;
+  }
+
+  backCameras = [];
+  frontCameras = [];
+
+  for (const cam of allCameras) {
+    const label = cam.label.toLowerCase();
+    if (label.includes('front') || label.includes('facetime') || label.includes('user')) {
+      frontCameras.push(cam);
+    } else {
+      backCameras.push(cam);
+    }
+  }
+
+  if (frontCameras.length === 0 && backCameras.length === 0) {
+    backCameras = allCameras.slice(0, Math.max(1, allCameras.length - 1));
+    if (allCameras.length > 1) {
+      frontCameras = [allCameras[allCameras.length - 1]];
+    }
+  }
+
+  return true;
+}
+
+function getFilteredBackCameras() {
+  if (backCameras.length <= 1) return backCameras;
+
+  const classified = backCameras.map(cam => ({
+    device: cam,
+    type: classifyCamera(cam.label)
+  }));
+
+  const withoutMain = classified.filter(c => c.type !== 'wide');
+
+  if (withoutMain.length > 0) return withoutMain.map(c => c.device);
+  return backCameras.slice(1);
+}
+
+function getLensLabel(cam) {
+  const type = classifyCamera(cam.label);
+  if (type === 'ultrawide') return '0.5×';
+  if (type === 'telephoto') return '3×';
+  return '1×';
+}
+
+function buildLensButtons() {
+  lensRow.innerHTML = '';
+  const cameras = isFront ? frontCameras : getFilteredBackCameras();
+
+  cameras.forEach((cam, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'lens-btn' + (cam.deviceId === activeDeviceId ? ' active' : '');
+
+    if (isFront) {
+      btn.textContent = frontCameras.length > 1 ? `F${i + 1}` : 'Front';
+    } else {
+      btn.textContent = getLensLabel(cam);
+    }
+
+    btn.addEventListener('click', () => switchCamera(cam.deviceId));
+    lensRow.appendChild(btn);
+  });
+}
+
+async function switchCamera(deviceId) {
+  if (deviceId === activeDeviceId) return;
+
+  statusText.textContent = 'Switching...';
+
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+  }
+
+  try {
+    const constraints = {
+      video: {
+        deviceId: { exact: deviceId },
+        width: { ideal: 3840 },
+        height: { ideal: 2160 }
+      },
+      audio: false
+    };
+
+    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = currentStream;
+    activeDeviceId = deviceId;
+
+    const track = currentStream.getVideoTracks()[0];
+    const settings = track.getSettings();
+    statusText.textContent = isFront ? 'Front' : getLensLabel(
+      (isFront ? frontCameras : getFilteredBackCameras()).find(c => c.deviceId === deviceId) || { label: '' }
+    );
+    resText.textContent = `${settings.width || '?'}×${settings.height || '?'}`;
+
+    buildLensButtons();
+  } catch (e) {
+    statusText.textContent = 'Error switching lens';
+    showToast('Could not access this camera');
+  }
+}
+
+async function init() {
+  statusText.textContent = 'Detecting cameras...';
+  const found = await enumerateCameras();
+  if (!found) return;
+
+  const safeBacks = getFilteredBackCameras();
+  const startCam = safeBacks.length > 0 ? safeBacks[0] : frontCameras[0];
+
+  if (!startCam) {
+    errorMsg.style.display = 'block';
+    errorMsg.textContent = 'No working cameras available.';
+    return;
+  }
+
+  isFront = frontCameras.includes(startCam);
+  await switchCamera(startCam.deviceId);
+  buildLensButtons();
+
+  statusText.textContent = safeBacks.length + ' back lens(es), ' + frontCameras.length + ' front';
+  setTimeout(() => {
+    const current = (isFront ? frontCameras : safeBacks).find(c => c.deviceId === activeDeviceId);
+    statusText.textContent = isFront ? 'Front' : (current ? getLensLabel(current) : 'Ready');
+  }, 2000);
+}
+
+function takePhoto() {
+  const track = currentStream?.getVideoTracks()[0];
+  if (!track) return;
+
+  const settings = track.getSettings();
+  canvas.width = settings.width || video.videoWidth;
+  canvas.height = settings.height || video.videoHeight;
+
+  const ctx = canvas.getContext('2d');
+  if (isFront) {
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (isFront) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 150);
+
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    currentBlob = blob;
+    previewImg.src = URL.createObjectURL(blob);
+    preview.classList.add('active');
+  }, 'image/jpeg', 0.95);
+}
+
+function savePhoto() {
+  if (!currentBlob) return;
+
+  if (navigator.share && navigator.canShare) {
+    const file = new File([currentBlob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    if (navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file] }).catch(() => fallbackSave());
+      return;
+    }
+  }
+  fallbackSave();
+}
+
+function fallbackSave() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(currentBlob);
+  a.download = `photo_${Date.now()}.jpg`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  showToast('Photo saved');
+}
+
+function sharePhoto() {
+  if (!currentBlob) return;
+  const file = new File([currentBlob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({
+      files: [file],
+      title: 'Photo'
+    }).catch(() => {});
+  } else {
+    fallbackSave();
+  }
+}
+
+shutterBtn.addEventListener('click', takePhoto);
+
+flipBtn.addEventListener('click', () => {
+  if (isFront && getFilteredBackCameras().length === 0) return;
+  if (!isFront && frontCameras.length === 0) return;
+
+  isFront = !isFront;
+  const cameras = isFront ? frontCameras : getFilteredBackCameras();
+  if (cameras.length > 0) {
+    switchCamera(cameras[0].deviceId);
+  }
+});
+
+closePreview.addEventListener('click', () => {
+  preview.classList.remove('active');
+  if (previewImg.src.startsWith('blob:')) URL.revokeObjectURL(previewImg.src);
+  currentBlob = null;
+});
+
+saveBtn.addEventListener('click', savePhoto);
+shareBtn.addEventListener('click', sharePhoto);
+
+init();
+</script>
+</body>
+</html>
