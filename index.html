@@ -12,64 +12,48 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    background: #000;
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
+  /* Lock to portrait */
+  @media screen and (orientation: landscape) {
+    body::before {
+      content: 'Rotate your phone to portrait mode 📱';
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: #000; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 600; text-align: center;
+      z-index: 9999; padding: 40px;
+    }
+    body > * { display: none !important; }
   }
 
-  /* ---- SETUP SCREEN ---- */
+  body {
+    background: #000; color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    height: 100vh; height: 100dvh;
+    overflow: hidden; user-select: none; -webkit-user-select: none;
+  }
+
+  /* ---- SETUP ---- */
   .setup-screen {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    height: 100%; display: flex; flex-direction: column;
     padding: 20px;
     padding-top: max(60px, env(safe-area-inset-top));
     padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
 
   .setup-screen h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
-
-  .setup-screen p {
-    font-size: 15px;
-    color: rgba(255,255,255,0.6);
-    margin-bottom: 24px;
-    line-height: 1.4;
-  }
+  .setup-screen p { font-size: 15px; color: rgba(255,255,255,0.6); margin-bottom: 24px; line-height: 1.4; }
 
   .setup-step {
-    font-size: 13px;
-    color: #f5c518;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
+    font-size: 13px; color: #f5c518; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
   }
 
-  .camera-list {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
+  .camera-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
 
   .camera-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px;
-    border-radius: 14px;
-    border: 2px solid #333;
-    background: #1a1a1a;
-    cursor: pointer;
-    transition: all 0.2s;
+    display: flex; align-items: center; gap: 14px; padding: 16px;
+    border-radius: 14px; border: 2px solid #333; background: #1a1a1a;
+    cursor: pointer; transition: all 0.2s;
   }
 
   .camera-item.testing { border-color: #f5c518; background: rgba(245,197,24,0.08); }
@@ -77,32 +61,21 @@
   .camera-item.working { border-color: #44cc44; background: rgba(68,204,68,0.08); }
 
   .cam-icon {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: #333;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
+    width: 44px; height: 44px; border-radius: 50%; background: #333;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
   }
 
   .camera-item.broken .cam-icon { background: rgba(255,68,68,0.2); }
   .camera-item.working .cam-icon { background: rgba(68,204,68,0.2); }
   .cam-info { flex: 1; min-width: 0; }
-
   .cam-name { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
-
-  .cam-label {
-    font-size: 12px;
-    color: rgba(255,255,255,0.4);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-
+  .cam-label { font-size: 12px; color: rgba(255,255,255,0.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cam-status { font-size: 13px; font-weight: 600; flex-shrink: 0; }
   .camera-item.broken .cam-status { color: #ff4444; }
   .camera-item.working .cam-status { color: #44cc44; }
 
   .setup-preview {
-    width: 100%; height: 180px;
-    border-radius: 14px; overflow: hidden;
+    width: 100%; height: 180px; border-radius: 14px; overflow: hidden;
     background: #111; margin-bottom: 16px; position: relative;
   }
 
@@ -111,8 +84,8 @@
 
   .setup-preview-label {
     position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.7); padding: 4px 12px;
-    border-radius: 10px; font-size: 12px; color: rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 10px;
+    font-size: 12px; color: rgba(255,255,255,0.7);
   }
 
   .setup-actions { display: flex; gap: 10px; }
@@ -127,9 +100,9 @@
   .btn-working { background: rgba(68,204,68,0.15); color: #66cc66; border: 2px solid #44cc44; }
 
   .btn-done {
-    background: #f5c518; color: #000; padding: 16px;
-    border-radius: 14px; border: none; font-size: 17px; font-weight: 700;
-    cursor: pointer; width: 100%; transition: transform 0.1s;
+    background: #f5c518; color: #000; padding: 16px; border-radius: 14px;
+    border: none; font-size: 17px; font-weight: 700; cursor: pointer;
+    width: 100%; transition: transform 0.1s;
   }
 
   .btn-done:active { transform: scale(0.97); }
@@ -137,8 +110,8 @@
 
   .btn-reset {
     background: none; border: none; color: rgba(255,255,255,0.4);
-    font-size: 13px; cursor: pointer; padding: 8px;
-    margin-top: 8px; width: 100%; text-align: center;
+    font-size: 13px; cursor: pointer; padding: 8px; margin-top: 8px;
+    width: 100%; text-align: center;
     display: flex; align-items: center; justify-content: center; gap: 6px;
   }
 
@@ -151,69 +124,117 @@
   .viewfinder video { width: 100%; height: 100%; object-fit: cover; }
   .viewfinder video.mirrored { transform: scaleX(-1); }
 
-  /* Grid overlay */
+  /* Aspect ratio crop */
+  .viewfinder.ratio-169 video { object-fit: cover; }
+  .viewfinder.ratio-11 video { object-position: center; }
+
+  /* Grid SVG overlay */
   .grid-overlay {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none; z-index: 5; display: none;
   }
-
   .grid-overlay.active { display: block; }
+  .grid-overlay svg { width: 100%; height: 100%; }
+  .grid-overlay line { stroke: rgba(255,255,255,0.3); stroke-width: 1; }
 
-  .grid-overlay::before, .grid-overlay::after {
-    content: '';
-    position: absolute;
-    background: rgba(255,255,255,0.25);
+  /* Exposure slider */
+  .exposure-indicator {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    display: none; flex-direction: column; align-items: center; gap: 6px;
+    z-index: 20; pointer-events: none;
   }
 
-  .grid-overlay::before {
-    top: 0; bottom: 0;
-    left: 33.33%; width: 1px;
-    box-shadow: 33.33% 0 0 rgba(255,255,255,0.25);
+  .exposure-indicator.active { display: flex; }
+
+  .exp-track {
+    width: 4px; height: 120px; background: rgba(255,255,255,0.2);
+    border-radius: 2px; position: relative; pointer-events: all;
   }
 
-  .grid-overlay::after {
-    left: 0; right: 0;
-    top: 33.33%; height: 1px;
-    box-shadow: 0 33.33% 0 rgba(255,255,255,0.25);
+  .exp-thumb {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #f5c518; border: 2px solid #000;
+    box-shadow: 0 0 6px rgba(0,0,0,0.5);
   }
 
-  /* Flash toggle */
+  .exp-label {
+    font-size: 11px; color: #f5c518; font-weight: 700;
+    background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 4px;
+  }
+
+  /* Tap to focus/exposure indicator */
+  .focus-ring {
+    position: absolute; width: 60px; height: 60px;
+    border: 2px solid #f5c518; border-radius: 50%;
+    pointer-events: none; z-index: 15; display: none;
+    transform: translate(-50%, -50%);
+    animation: focusPulse 0.4s ease-out forwards;
+  }
+
+  @keyframes focusPulse {
+    0% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  }
+
+  /* Flash btn */
   .flash-btn {
     width: 44px; height: 44px; border-radius: 50%; border: none;
-    background: rgba(255,255,255,0.15); cursor: pointer;
+    background: rgba(0,0,0,0.4); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    right: 16px; z-index: 20;
+    position: absolute; top: max(12px, env(safe-area-inset-top)); right: 16px; z-index: 20;
   }
 
   .flash-btn.flash-on { background: rgba(245,197,24,0.3); border: 2px solid #f5c518; }
   .flash-btn svg { width: 22px; height: 22px; }
 
-  /* Timer indicator */
+  /* Timer countdown */
   .timer-indicator {
-    position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    left: 50%; transform: translateX(-50%);
-    background: rgba(245,197,24,0.9);
-    color: #000; font-size: 28px; font-weight: 700;
-    width: 60px; height: 60px; border-radius: 50%;
-    display: none; align-items: center; justify-content: center;
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.6); color: #f5c518;
+    font-size: 72px; font-weight: 700; border-radius: 20px;
+    padding: 10px 30px; display: none; align-items: center; justify-content: center;
     z-index: 50;
   }
 
   .timer-indicator.active { display: flex; }
 
-  .controls {
-    background: #1a1a1a; padding: 12px 16px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 12px;
+  /* Rec timer */
+  .rec-timer {
+    position: absolute; top: max(12px, env(safe-area-inset-top)); left: 16px;
+    background: rgba(255,0,0,0.8); color: #fff; font-size: 13px; font-weight: 700;
+    padding: 4px 10px; border-radius: 10px;
+    display: none; align-items: center; gap: 6px; z-index: 20;
   }
 
-  /* Mode row: Photo / Video */
-  .mode-row {
-    display: flex; justify-content: center; gap: 6px;
+  .rec-timer.active { display: flex; }
+  .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Lock screen overlay */
+  .lock-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: transparent; z-index: 40; display: none;
   }
+
+  .lock-overlay.active { display: block; }
+
+  .lock-badge {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.7);
+    font-size: 12px; padding: 6px 14px; border-radius: 14px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* Controls */
+  .controls {
+    background: #1a1a1a; padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .mode-row { display: flex; justify-content: center; gap: 6px; }
 
   .mode-btn {
     padding: 6px 18px; border-radius: 20px; border: none;
@@ -223,21 +244,43 @@
 
   .mode-btn.active { background: #f5c518; color: #000; }
 
+  /* Aspect ratio row */
+  .ratio-row { display: flex; justify-content: center; gap: 8px; }
+
+  .ratio-btn {
+    padding: 4px 12px; border-radius: 14px; border: 1.5px solid #444;
+    background: transparent; color: rgba(255,255,255,0.4);
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+
+  .ratio-btn.active { border-color: #f5c518; color: #f5c518; background: rgba(245,197,24,0.1); }
+
   .lens-row { display: flex; justify-content: center; gap: 12px; }
 
   .lens-btn {
     min-width: 56px; height: 56px; padding: 0 14px;
     border-radius: 28px; border: 2px solid #555;
     background: rgba(255,255,255,0.1); color: #fff;
-    font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
   }
 
   .lens-btn.active { border-color: #f5c518; background: rgba(245,197,24,0.2); color: #f5c518; }
 
+  .toggle-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+  .toggle-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 20px; border: 1.5px solid #444;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45);
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+
+  .toggle-btn svg { width: 13px; height: 13px; }
+  .toggle-btn.active { border-color: #f5c518; background: rgba(245,197,24,0.12); color: #f5c518; }
+
   .action-row {
-    display: flex; align-items: center;
-    justify-content: space-between; padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
   }
 
   .icon-btn {
@@ -248,25 +291,6 @@
 
   .icon-btn svg { width: 24px; height: 24px; }
 
-  /* Toggles row: grid + timer */
-  .toggle-row {
-    display: flex; justify-content: center; gap: 12px;
-  }
-
-  .toggle-btn {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 14px; border-radius: 20px; border: 2px solid #444;
-    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5);
-    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-  }
-
-  .toggle-btn svg { width: 14px; height: 14px; }
-
-  .toggle-btn.active {
-    border-color: #f5c518; background: rgba(245,197,24,0.15); color: #f5c518;
-  }
-
-  /* Shutter button — changes for video */
   .shutter-btn {
     width: 72px; height: 72px; border-radius: 50%;
     border: 4px solid #fff; background: transparent;
@@ -274,32 +298,19 @@
   }
 
   .shutter-btn::after {
-    content: '';
-    position: absolute;
+    content: ''; position: absolute;
     top: 4px; left: 4px; right: 4px; bottom: 4px;
     border-radius: 50%; background: #fff; transition: all 0.2s;
   }
 
   .shutter-btn:active::after { transform: scale(0.85); }
-
-  .shutter-btn.video-mode::after { background: #ff4444; border-radius: 50%; }
+  .shutter-btn.video-mode::after { background: #ff4444; }
   .shutter-btn.recording { border-color: #ff4444; }
-  .shutter-btn.recording::after { background: #ff4444; border-radius: 4px; width: 28px; height: 28px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-
-  /* Recording timer */
-  .rec-timer {
-    position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    left: 16px;
-    background: rgba(255,0,0,0.8);
-    color: #fff; font-size: 13px; font-weight: 700;
-    padding: 4px 10px; border-radius: 10px;
-    display: none; align-items: center; gap: 6px; z-index: 20;
+  .shutter-btn.recording::after {
+    background: #ff4444; border-radius: 6px;
+    width: 26px; height: 26px; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
   }
-
-  .rec-timer.active { display: flex; }
-  .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
   .flash {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -309,9 +320,10 @@
 
   .flash.active { opacity: 0.8; }
 
+  /* Preview */
   .preview-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.95); z-index: 200;
+    background: rgba(0,0,0,0.97); z-index: 200;
     display: none; flex-direction: column;
   }
 
@@ -324,40 +336,39 @@
 
   .close-btn {
     width: 36px; height: 36px; border-radius: 50%; border: none;
-    background: rgba(255,255,255,0.2); color: #fff;
-    font-size: 20px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.2); color: #fff; font-size: 20px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
 
   .preview-image-container {
-    flex: 1; display: flex; align-items: center;
-    justify-content: center; padding: 16px;
+    flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px;
   }
 
-  .preview-image-container img, .preview-image-container video {
+  .preview-image-container img,
+  .preview-image-container video {
     max-width: 100%; max-height: 100%; border-radius: 8px;
   }
 
   .preview-bottom {
-    display: flex; justify-content: center; gap: 16px; padding: 20px;
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    display: flex; justify-content: center; gap: 12px; padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 
   .save-btn {
     display: flex; align-items: center; gap: 8px;
-    padding: 14px 32px; border-radius: 50px; border: none;
+    padding: 14px 28px; border-radius: 50px; border: none;
     background: #f5c518; color: #000; font-size: 16px; font-weight: 600; cursor: pointer;
   }
 
   .save-btn svg { width: 20px; height: 20px; fill: #000; }
 
   .share-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 50px; height: 50px; border-radius: 50%;
-    border: 2px solid #555; background: transparent; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 20px; border-radius: 50px; border: 2px solid #555;
+    background: transparent; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
   }
 
-  .share-btn svg { width: 22px; height: 22px; fill: #fff; }
+  .share-btn svg { width: 20px; height: 20px; fill: #fff; }
 
   .toast {
     position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
@@ -371,13 +382,13 @@
 </head>
 <body>
 
-<!-- ========== SETUP SCREEN ========== -->
+<!-- SETUP -->
 <div class="setup-screen" id="setupScreen">
   <div class="setup-step">Step 1 of 2</div>
   <h1>Which lens is broken?</h1>
   <p>Tap each camera to preview it. Mark the broken one(s) so we can skip them.</p>
 
-  <div class="setup-preview" id="setupPreview">
+  <div class="setup-preview">
     <video id="setupVideo" autoplay playsinline muted></video>
     <div class="setup-preview-label" id="setupPreviewLabel">Tap a camera to preview</div>
   </div>
@@ -391,7 +402,7 @@
 
   <button class="btn-done" id="doneBtn" disabled>Start Camera</button>
   <button class="btn-reset" id="resetBtn" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
       <circle cx="12" cy="12" r="3"/>
       <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
     </svg>
@@ -399,18 +410,44 @@
   </button>
 </div>
 
-<!-- ========== CAMERA SCREEN ========== -->
+<!-- CAMERA -->
 <div class="camera-screen" id="cameraScreen">
-  <div class="viewfinder">
+  <div class="viewfinder" id="viewfinder">
     <video id="video" autoplay playsinline muted></video>
-    <div class="grid-overlay" id="gridOverlay"></div>
+
+    <!-- Grid overlay (SVG) -->
+    <div class="grid-overlay" id="gridOverlay">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="33.33" y1="0" x2="33.33" y2="100"/>
+        <line x1="66.66" y1="0" x2="66.66" y2="100"/>
+        <line x1="0" y1="33.33" x2="100" y2="33.33"/>
+        <line x1="0" y1="66.66" x2="100" y2="66.66"/>
+      </svg>
+    </div>
+
+    <div class="focus-ring" id="focusRing"></div>
+
+    <!-- Exposure slider -->
+    <div class="exposure-indicator" id="expIndicator">
+      <div class="exp-label" id="expLabel">0</div>
+      <div class="exp-track" id="expTrack">
+        <div class="exp-thumb" id="expThumb" style="bottom: 50%; transform: translateX(-50%) translateY(50%)"></div>
+      </div>
+    </div>
+
     <div class="timer-indicator" id="timerIndicator">3</div>
     <div class="rec-timer" id="recTimer"><div class="rec-dot"></div><span id="recTime">0:00</span></div>
-    <button class="flash-btn" id="flashBtn" title="Toggle flash">
+
+    <button class="flash-btn" id="flashBtn">
       <svg id="flashIcon" viewBox="0 0 24 24" fill="#fff">
         <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
       </svg>
     </button>
+
+    <!-- Lock overlay -->
+    <div class="lock-overlay" id="lockOverlay">
+      <div class="lock-badge">🔒 Locked — hold 2s to unlock</div>
+    </div>
   </div>
 
   <div class="controls">
@@ -419,31 +456,45 @@
       <button class="mode-btn" id="videoModeBtn">Video</button>
     </div>
 
+    <div class="ratio-row">
+      <button class="ratio-btn active" id="ratio43">4:3</button>
+      <button class="ratio-btn" id="ratio169">16:9</button>
+      <button class="ratio-btn" id="ratio11">1:1</button>
+    </div>
+
     <div class="lens-row" id="lensRow"></div>
 
     <div class="toggle-row">
       <button class="toggle-btn" id="gridBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M8 3v18M16 3v18M3 8h18M3 16h18"/>
-        </svg>
-        Grid
+        </svg>Grid
       </button>
       <button class="toggle-btn" id="timerBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M12 5V3M10 3h4"/>
-        </svg>
-        <span id="timerLabel">Timer: Off</span>
+        </svg><span id="timerLabel">Timer: Off</span>
+      </button>
+      <button class="toggle-btn" id="expBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>Exposure
+      </button>
+      <button class="toggle-btn" id="lockBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+        </svg>Lock
       </button>
     </div>
 
     <div class="action-row">
-      <button class="icon-btn" id="flipBtn" title="Flip camera">
+      <button class="icon-btn" id="flipBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
           <path d="M16 3h5v5M4 20L21 3M8 21H3v-5M20 4L3 21"/>
         </svg>
       </button>
       <button class="shutter-btn" id="shutterBtn"></button>
-      <button class="icon-btn" id="settingsBtn" title="Settings">
+      <button class="icon-btn" id="settingsBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
@@ -455,6 +506,7 @@
 
 <div class="flash" id="flash"></div>
 
+<!-- PREVIEW -->
 <div class="preview-overlay" id="preview">
   <div class="preview-top">
     <button class="close-btn" id="closePreview">&times;</button>
@@ -469,6 +521,7 @@
     </button>
     <button class="share-btn" id="shareBtn">
       <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+      Share
     </button>
   </div>
 </div>
@@ -478,47 +531,34 @@
 
 <script>
 const STORAGE_KEY = 'brokenlens_config';
-
 const ALLOWED_BACK_INDICES = [0, 2, 5];
 const BACK_CAMERA_NAMES = { 0: 'Main (1x)', 2: 'Wide (0.5x)', 5: 'Tele (3x)' };
 const LENS_BTN_LABELS = { 0: '1x', 2: '0.5x', 5: '3x' };
 
-let allCameras = [];
-let visibleCameras = [];
-let setupStream = null;
-let selectedCamIdx = -1;
-let cameraStates = {};
+let allCameras = [], visibleCameras = [];
+let setupStream = null, selectedCamIdx = -1, cameraStates = {};
+let currentStream = null, currentBlob = null, currentVideoBlob = null;
+let activeDeviceId = null, isFront = false;
+let workingBackCameras = [], workingFrontCameras = [];
 
-let currentStream = null;
-let currentBlob = null;
-let currentVideoBlob = null;
-let activeDeviceId = null;
-let isFront = false;
-let workingBackCameras = [];
-let workingFrontCameras = [];
+let flashEnabled = false, gridEnabled = false;
+let timerMode = 0, timerTimeout = null;
+let isVideoMode = false, mediaRecorder = null;
+let recordedChunks = [], isRecording = false;
+let recInterval = null, recSeconds = 0;
+let exposureValue = 0, expVisible = false;
+let isLocked = false, lockHoldTimeout = null;
+let aspectRatio = '4:3';
+let burstInterval = null, isBursting = false;
 
-let flashEnabled = false;
-let gridEnabled = false;
-let timerMode = 0; // 0=off, 3=3s, 10=10s
-let timerTimeout = null;
-
-let isVideoMode = false;
-let mediaRecorder = null;
-let recordedChunks = [];
-let isRecording = false;
-let recInterval = null;
-let recSeconds = 0;
-
+// ============ UTILS ============
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-function getSavedConfig() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; }
-}
+function getSavedConfig() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; } }
 function saveConfig(c) { localStorage.setItem(STORAGE_KEY, JSON.stringify(c)); }
 function clearConfig() { localStorage.removeItem(STORAGE_KEY); }
 
@@ -530,31 +570,25 @@ function isFrontCamera(label) {
 function getVisibleCameras(all) {
   const front = all.filter(c => isFrontCamera(c.label));
   const back = all.filter(c => !isFrontCamera(c.label));
-  const allowedBack = ALLOWED_BACK_INDICES.map(i => back[i]).filter(Boolean);
-  return [...front, ...allowedBack];
+  return [...front, ...ALLOWED_BACK_INDICES.map(i => back[i]).filter(Boolean)];
 }
 
 function getDisplayName(cam) {
   if (isFrontCamera(cam.label)) return 'Front Camera';
   const allBack = allCameras.filter(c => !isFrontCamera(c.label));
-  const origIdx = allBack.indexOf(cam);
-  return BACK_CAMERA_NAMES[origIdx] || 'Back Camera';
+  return BACK_CAMERA_NAMES[allBack.indexOf(cam)] || 'Back Camera';
 }
 
 function getLensBtnLabel(cam) {
   if (isFrontCamera(cam.label)) return 'Front';
   const allBack = allCameras.filter(c => !isFrontCamera(c.label));
-  const origIdx = allBack.indexOf(cam);
-  return LENS_BTN_LABELS[origIdx] || 'Back';
+  return LENS_BTN_LABELS[allBack.indexOf(cam)] || 'Back';
 }
 
 async function enumerateAllCameras() {
-  try {
-    const s = await navigator.mediaDevices.getUserMedia({ video: true });
-    s.getTracks().forEach(t => t.stop());
-  } catch { return []; }
+  try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); s.getTracks().forEach(t => t.stop()); } catch { return []; }
   const d = await navigator.mediaDevices.enumerateDevices();
-  return d.filter(d => d.kind === 'videoinput');
+  return d.filter(x => x.kind === 'videoinput');
 }
 
 // ============ FLASH ============
@@ -563,8 +597,7 @@ function updateFlashButton() {
   const icon = document.getElementById('flashIcon');
   if (flashEnabled) {
     btn.classList.add('flash-on');
-    icon.innerHTML = '<path d="M7 2v11h3v9l7-12h-4l4-8z"/>';
-    icon.style.fill = '#f5c518';
+    icon.innerHTML = '<path d="M7 2v11h3v9l7-12h-4l4-8z"/>'; icon.style.fill = '#f5c518';
   } else {
     btn.classList.remove('flash-on');
     icon.innerHTML = '<path d="M7 2v11h3v9l7-12h-4l4-8z"/><line x1="2" y1="2" x2="22" y2="22" stroke="#fff" stroke-width="2"/>';
@@ -582,6 +615,7 @@ async function applyTorch(on) {
 }
 
 document.getElementById('flashBtn').addEventListener('click', () => {
+  if (isLocked) return;
   flashEnabled = !flashEnabled;
   updateFlashButton();
   applyTorch(flashEnabled);
@@ -598,7 +632,7 @@ document.getElementById('gridBtn').addEventListener('click', () => {
 const timerCycle = [0, 3, 10];
 const timerLabels = ['Timer: Off', 'Timer: 3s', 'Timer: 10s'];
 
-function updateTimerButton() {
+function updateTimerBtn() {
   const idx = timerCycle.indexOf(timerMode);
   document.getElementById('timerLabel').textContent = timerLabels[idx];
   document.getElementById('timerBtn').classList.toggle('active', timerMode !== 0);
@@ -607,10 +641,136 @@ function updateTimerButton() {
 document.getElementById('timerBtn').addEventListener('click', () => {
   const idx = timerCycle.indexOf(timerMode);
   timerMode = timerCycle[(idx + 1) % timerCycle.length];
-  updateTimerButton();
+  updateTimerBtn();
 });
 
-// ============ MODE (PHOTO/VIDEO) ============
+// ============ EXPOSURE ============
+document.getElementById('expBtn').addEventListener('click', () => {
+  expVisible = !expVisible;
+  document.getElementById('expIndicator').classList.toggle('active', expVisible);
+  document.getElementById('expBtn').classList.toggle('active', expVisible);
+});
+
+const expTrack = document.getElementById('expTrack');
+const expThumb = document.getElementById('expThumb');
+const expLabel = document.getElementById('expLabel');
+
+function setExposure(val) {
+  exposureValue = Math.max(-2, Math.min(2, val));
+  const pct = ((exposureValue + 2) / 4) * 100;
+  expThumb.style.bottom = pct + '%';
+  expThumb.style.transform = 'translateX(-50%) translateY(50%)';
+  expLabel.textContent = exposureValue >= 0 ? '+' + exposureValue.toFixed(1) : exposureValue.toFixed(1);
+  applyExposure();
+}
+
+async function applyExposure() {
+  if (!currentStream) return;
+  const track = currentStream.getVideoTracks()[0];
+  if (!track) return;
+  const caps = track.getCapabilities();
+  if (caps.exposureCompensation) {
+    try {
+      const min = caps.exposureCompensation.min;
+      const max = caps.exposureCompensation.max;
+      const mapped = min + ((exposureValue + 2) / 4) * (max - min);
+      await track.applyConstraints({ advanced: [{ exposureCompensation: mapped }] });
+    } catch {}
+  } else {
+    // Fallback: CSS brightness on video
+    const brightness = 1 + (exposureValue * 0.3);
+    document.getElementById('video').style.filter = `brightness(${brightness})`;
+  }
+}
+
+let expDragging = false;
+
+expTrack.addEventListener('touchstart', e => { expDragging = true; handleExpDrag(e.touches[0]); }, { passive: true });
+expTrack.addEventListener('touchmove', e => { if (expDragging) handleExpDrag(e.touches[0]); e.stopPropagation(); }, { passive: true });
+expTrack.addEventListener('touchend', () => { expDragging = false; });
+expTrack.addEventListener('mousedown', e => { expDragging = true; handleExpDrag(e); });
+window.addEventListener('mousemove', e => { if (expDragging) handleExpDrag(e); });
+window.addEventListener('mouseup', () => { expDragging = false; });
+
+function handleExpDrag(e) {
+  const rect = expTrack.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  const pct = 1 - Math.max(0, Math.min(1, y / rect.height));
+  setExposure((pct * 4) - 2);
+}
+
+// ============ ASPECT RATIO ============
+function setAspectRatio(ratio) {
+  aspectRatio = ratio;
+  const vf = document.getElementById('viewfinder');
+  const video = document.getElementById('video');
+  document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+
+  if (ratio === '16:9') {
+    document.getElementById('ratio169').classList.add('active');
+    vf.style.aspectRatio = '';
+    video.style.aspectRatio = '9/16';
+  } else if (ratio === '1:1') {
+    document.getElementById('ratio11').classList.add('active');
+    video.style.aspectRatio = '1/1';
+  } else {
+    document.getElementById('ratio43').classList.add('active');
+    video.style.aspectRatio = '';
+  }
+}
+
+document.getElementById('ratio43').addEventListener('click', () => setAspectRatio('4:3'));
+document.getElementById('ratio169').addEventListener('click', () => setAspectRatio('16:9'));
+document.getElementById('ratio11').addEventListener('click', () => setAspectRatio('1:1'));
+
+// ============ TAP TO FOCUS ============
+document.getElementById('viewfinder').addEventListener('click', e => {
+  if (isLocked) return;
+  if (e.target.closest('button') || e.target.closest('.exposure-indicator') || e.target.closest('.lock-overlay')) return;
+
+  const ring = document.getElementById('focusRing');
+  ring.style.left = e.clientX + 'px';
+  ring.style.top = e.clientY + 'px';
+  ring.style.display = 'block';
+  ring.style.animation = 'none';
+  void ring.offsetWidth;
+  ring.style.animation = 'focusPulse 0.4s ease-out forwards';
+  setTimeout(() => ring.style.display = 'none', 800);
+
+  if (!currentStream) return;
+  const track = currentStream.getVideoTracks()[0];
+  if (!track) return;
+  const caps = track.getCapabilities();
+  if (caps.focusMode && caps.focusMode.includes('manual')) {
+    const rect = document.getElementById('viewfinder').getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    try { track.applyConstraints({ advanced: [{ focusMode: 'manual', pointsOfInterest: [{ x, y }] }] }); } catch {}
+  }
+});
+
+// ============ SCREEN LOCK ============
+document.getElementById('lockBtn').addEventListener('click', () => {
+  isLocked = true;
+  document.getElementById('lockOverlay').classList.add('active');
+  document.getElementById('lockBtn').classList.add('active');
+  showToast('Screen locked — hold 2s to unlock');
+});
+
+document.getElementById('lockOverlay').addEventListener('touchstart', () => {
+  lockHoldTimeout = setTimeout(() => {
+    isLocked = false;
+    document.getElementById('lockOverlay').classList.remove('active');
+    document.getElementById('lockBtn').classList.remove('active');
+    showToast('Unlocked');
+  }, 2000);
+});
+
+document.getElementById('lockOverlay').addEventListener('touchend', () => {
+  clearTimeout(lockHoldTimeout);
+});
+
+// ============ MODE ============
 document.getElementById('photoModeBtn').addEventListener('click', () => {
   if (isRecording) return;
   isVideoMode = false;
@@ -626,7 +786,7 @@ document.getElementById('videoModeBtn').addEventListener('click', () => {
   document.getElementById('videoModeBtn').classList.add('active');
   document.getElementById('photoModeBtn').classList.remove('active');
   document.getElementById('shutterBtn').classList.add('video-mode');
-  document.getElementById('flashBtn').style.display = 'none'; // no torch during video on iOS
+  document.getElementById('flashBtn').style.display = 'none';
 });
 
 // ============ SETUP ============
@@ -635,24 +795,21 @@ async function startSetup() {
   document.getElementById('cameraScreen').classList.remove('active');
 
   allCameras = await enumerateAllCameras();
-  const cameraList = document.getElementById('cameraList');
-
   if (allCameras.length === 0) {
-    cameraList.innerHTML = '<p style="text-align:center;color:#ff4444;padding:40px">No cameras detected.</p>';
+    document.getElementById('cameraList').innerHTML = '<p style="text-align:center;color:#ff4444;padding:40px">No cameras detected.</p>';
     return;
   }
 
   visibleCameras = getVisibleCameras(allCameras);
   cameraStates = {};
-  visibleCameras.forEach(cam => { cameraStates[cam.deviceId] = 'unknown'; });
+  visibleCameras.forEach(c => { cameraStates[c.deviceId] = 'unknown'; });
   renderCameraList();
   updateDoneButton();
 }
 
 function renderCameraList() {
-  const cameraList = document.getElementById('cameraList');
-  cameraList.innerHTML = '';
-
+  const list = document.getElementById('cameraList');
+  list.innerHTML = '';
   visibleCameras.forEach((cam, i) => {
     const state = cameraStates[cam.deviceId];
     const div = document.createElement('div');
@@ -660,20 +817,16 @@ function renderCameraList() {
       + (selectedCamIdx === i ? ' testing' : '')
       + (state === 'broken' ? ' broken' : '')
       + (state === 'working' ? ' working' : '');
-
-    const icon = isFrontCamera(cam.label) ? '🤳' : '📷';
-    const statusText = state === 'broken' ? 'BROKEN' : state === 'working' ? 'OK' : 'Tap to test';
-
     div.innerHTML = `
-      <div class="cam-icon">${icon}</div>
+      <div class="cam-icon">${isFrontCamera(cam.label) ? '🤳' : '📷'}</div>
       <div class="cam-info">
         <div class="cam-name">${getDisplayName(cam)}</div>
         <div class="cam-label">${cam.label || 'Unknown'}</div>
       </div>
-      <span class="cam-status">${statusText}</span>
+      <span class="cam-status">${state === 'broken' ? 'BROKEN' : state === 'working' ? 'OK' : 'Tap to test'}</span>
     `;
     div.addEventListener('click', () => selectCameraForTest(i));
-    cameraList.appendChild(div);
+    list.appendChild(div);
   });
 }
 
@@ -684,7 +837,6 @@ async function selectCameraForTest(index) {
   const label = document.getElementById('setupPreviewLabel');
 
   if (setupStream) { setupStream.getTracks().forEach(t => t.stop()); setupStream = null; }
-
   label.textContent = 'Loading...';
   document.getElementById('setupMarkBtns').style.display = 'flex';
 
@@ -696,31 +848,23 @@ async function selectCameraForTest(index) {
     setupVideo.srcObject = setupStream;
     setupVideo.classList.toggle('mirrored', isFrontCamera(cam.label));
     label.textContent = getDisplayName(cam);
-  } catch {
-    label.textContent = 'Could not access this camera';
-  }
+  } catch { label.textContent = 'Could not access this camera'; }
   renderCameraList();
 }
 
 function markCamera(state) {
   if (selectedCamIdx < 0) return;
   cameraStates[visibleCameras[selectedCamIdx].deviceId] = state;
-  renderCameraList();
-  updateDoneButton();
+  renderCameraList(); updateDoneButton();
 }
 
 function updateDoneButton() {
   const allMarked = visibleCameras.every(c => cameraStates[c.deviceId] !== 'unknown');
   const hasWorking = visibleCameras.some(c => cameraStates[c.deviceId] === 'working');
-  const doneBtn = document.getElementById('doneBtn');
-  if (allMarked && hasWorking) {
-    doneBtn.disabled = false; doneBtn.textContent = 'Start Camera';
-  } else if (allMarked) {
-    doneBtn.disabled = true; doneBtn.textContent = 'Mark at least one as working';
-  } else {
-    const rem = visibleCameras.filter(c => cameraStates[c.deviceId] === 'unknown').length;
-    doneBtn.disabled = true; doneBtn.textContent = `${rem} camera(s) left to mark`;
-  }
+  const btn = document.getElementById('doneBtn');
+  if (allMarked && hasWorking) { btn.disabled = false; btn.textContent = 'Start Camera'; }
+  else if (allMarked) { btn.disabled = true; btn.textContent = 'Mark at least one as working'; }
+  else { btn.disabled = true; btn.textContent = `${visibleCameras.filter(c => cameraStates[c.deviceId] === 'unknown').length} camera(s) left to mark`; }
 }
 
 function finishSetup() {
@@ -730,8 +874,7 @@ function finishSetup() {
     working: visibleCameras.filter(c => cameraStates[c.deviceId] === 'working').map(c => c.deviceId),
     timestamp: Date.now()
   };
-  saveConfig(config);
-  launchCamera(config);
+  saveConfig(config); launchCamera(config);
 }
 
 // ============ CAMERA ============
@@ -740,36 +883,28 @@ async function launchCamera(config) {
   document.getElementById('cameraScreen').classList.add('active');
   document.getElementById('resetBtn').style.display = 'flex';
 
-  if (allCameras.length === 0) {
-    allCameras = await enumerateAllCameras();
-    visibleCameras = getVisibleCameras(allCameras);
-  }
+  if (allCameras.length === 0) { allCameras = await enumerateAllCameras(); visibleCameras = getVisibleCameras(allCameras); }
 
   const workingIds = new Set(config.working);
   workingBackCameras = visibleCameras.filter(c => workingIds.has(c.deviceId) && !isFrontCamera(c.label));
   workingFrontCameras = visibleCameras.filter(c => workingIds.has(c.deviceId) && isFrontCamera(c.label));
-
-  isFront = false;
-  if (workingBackCameras.length === 0 && workingFrontCameras.length > 0) isFront = true;
+  isFront = workingBackCameras.length === 0 && workingFrontCameras.length > 0;
 
   const startCam = workingBackCameras[0] || workingFrontCameras[0];
   if (startCam) await switchCamera(startCam.deviceId);
 
-  buildLensButtons();
-  updateFlashButton();
-  updateTimerButton();
+  buildLensButtons(); updateFlashButton(); updateTimerBtn();
 }
 
 function buildLensButtons() {
-  const lensRow = document.getElementById('lensRow');
-  lensRow.innerHTML = '';
-  const cameras = isFront ? workingFrontCameras : workingBackCameras;
-  cameras.forEach(cam => {
+  const row = document.getElementById('lensRow');
+  row.innerHTML = '';
+  (isFront ? workingFrontCameras : workingBackCameras).forEach(cam => {
     const btn = document.createElement('button');
     btn.className = 'lens-btn' + (cam.deviceId === activeDeviceId ? ' active' : '');
     btn.textContent = getLensBtnLabel(cam);
     btn.addEventListener('click', () => switchCamera(cam.deviceId));
-    lensRow.appendChild(btn);
+    row.appendChild(btn);
   });
 }
 
@@ -778,57 +913,72 @@ async function switchCamera(deviceId) {
   if (isRecording) stopRecording();
   if (currentStream) currentStream.getTracks().forEach(t => t.stop());
 
-  flashEnabled = false;
-  updateFlashButton();
+  flashEnabled = false; updateFlashButton();
 
   try {
     currentStream = await navigator.mediaDevices.getUserMedia({
-      video: { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } },
+      video: {
+        deviceId: { exact: deviceId },
+        width: { ideal: 3840 }, height: { ideal: 2160 },
+        frameRate: { ideal: 60 }
+      },
       audio: true
     });
 
     const video = document.getElementById('video');
     video.srcObject = currentStream;
+    video.style.filter = '';
     activeDeviceId = deviceId;
     video.classList.toggle('mirrored', isFront);
-
     document.getElementById('flashBtn').style.display = (isFront || isVideoMode) ? 'none' : 'flex';
+    exposureValue = 0;
+    if (expVisible) setExposure(0);
     buildLensButtons();
-  } catch {
-    showToast('Could not access this camera');
-  }
+  } catch { showToast('Could not access this camera'); }
 }
 
-// ============ SHUTTER / RECORD ============
-document.getElementById('shutterBtn').addEventListener('click', () => {
-  if (isVideoMode) {
-    isRecording ? stopRecording() : startRecording();
-  } else {
-    if (timerMode === 0) {
-      takePhoto();
-    } else {
-      startTimerThenPhoto();
-    }
+// ============ SHUTTER ============
+const shutterBtn = document.getElementById('shutterBtn');
+
+shutterBtn.addEventListener('click', () => {
+  if (isLocked) return;
+  if (isVideoMode) { isRecording ? stopRecording() : startRecording(); return; }
+  if (timerMode === 0) takePhoto();
+  else startTimerThenPhoto();
+});
+
+// Burst mode: hold shutter button
+shutterBtn.addEventListener('touchstart', e => {
+  if (isLocked || isVideoMode) return;
+  burstInterval = setTimeout(() => {
+    isBursting = true;
+    showToast('Burst mode — release to stop');
+    burstInterval = setInterval(() => takePhoto(), 300);
+  }, 600);
+}, { passive: true });
+
+shutterBtn.addEventListener('touchend', () => {
+  clearTimeout(burstInterval);
+  if (isBursting) {
+    clearInterval(burstInterval);
+    isBursting = false;
+    showToast('Burst done');
   }
 });
 
 function startTimerThenPhoto() {
   let count = timerMode;
-  const indicator = document.getElementById('timerIndicator');
-  indicator.textContent = count;
-  indicator.classList.add('active');
-  document.getElementById('shutterBtn').disabled = true;
-
+  const ind = document.getElementById('timerIndicator');
+  ind.textContent = count; ind.classList.add('active');
+  shutterBtn.disabled = true;
   timerTimeout = setInterval(() => {
     count--;
     if (count <= 0) {
       clearInterval(timerTimeout);
-      indicator.classList.remove('active');
-      document.getElementById('shutterBtn').disabled = false;
+      ind.classList.remove('active');
+      shutterBtn.disabled = false;
       takePhoto();
-    } else {
-      indicator.textContent = count;
-    }
+    } else { ind.textContent = count; }
   }, 1000);
 }
 
@@ -839,122 +989,112 @@ function takePhoto() {
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const settings = track.getSettings();
-  canvas.width = settings.width || video.videoWidth;
-  canvas.height = settings.height || video.videoHeight;
+
+  let w = settings.width || video.videoWidth;
+  let h = settings.height || video.videoHeight;
+
+  // Apply aspect ratio crop on canvas
+  if (aspectRatio === '1:1') {
+    const side = Math.min(w, h);
+    canvas.width = side; canvas.height = side;
+  } else if (aspectRatio === '16:9') {
+    canvas.width = w; canvas.height = Math.round(w * 9 / 16);
+  } else {
+    canvas.width = w; canvas.height = h;
+  }
 
   const ctx = canvas.getContext('2d');
   if (isFront) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const srcX = aspectRatio === '1:1' ? (w - canvas.width) / 2 : 0;
+  const srcY = aspectRatio === '16:9' ? (h - canvas.height) / 2 : (aspectRatio === '1:1' ? (h - canvas.height) / 2 : 0);
+
+  ctx.drawImage(video, srcX, srcY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
   if (isFront) ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-  document.getElementById('flash').classList.add('active');
-  setTimeout(() => document.getElementById('flash').classList.remove('active'), 150);
+  if (!isBursting) {
+    document.getElementById('flash').classList.add('active');
+    setTimeout(() => document.getElementById('flash').classList.remove('active'), 150);
+  }
 
   canvas.toBlob(blob => {
-    if (!blob) return;
-    currentBlob = blob;
-    currentVideoBlob = null;
-    const container = document.getElementById('previewContainer');
-    container.innerHTML = '<img id="previewImg" src="" alt="Photo">';
+    if (!blob || isBursting) return; // In burst, skip preview
+    currentBlob = blob; currentVideoBlob = null;
+    document.getElementById('previewContainer').innerHTML = '<img id="previewImg" src="" alt="Photo">';
     document.getElementById('previewImg').src = URL.createObjectURL(blob);
     document.getElementById('preview').classList.add('active');
-  }, 'image/jpeg', 0.95);
+  }, 'image/jpeg', 0.97);
 }
 
+// ============ VIDEO ============
 function startRecording() {
   if (!currentStream) return;
-  recordedChunks = [];
-  recSeconds = 0;
+  recordedChunks = []; recSeconds = 0;
 
-  const options = MediaRecorder.isTypeSupported('video/mp4') ? { mimeType: 'video/mp4' } :
-                  MediaRecorder.isTypeSupported('video/webm') ? { mimeType: 'video/webm' } : {};
+  const mimeType =
+    MediaRecorder.isTypeSupported('video/mp4;codecs=h264,aac') ? 'video/mp4;codecs=h264,aac' :
+    MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' :
+    MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' :
+    MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
 
   try {
-    mediaRecorder = new MediaRecorder(currentStream, options);
-  } catch {
-    showToast('Video recording not supported');
-    return;
-  }
+    mediaRecorder = new MediaRecorder(currentStream, mimeType ? { mimeType, videoBitsPerSecond: 8000000 } : { videoBitsPerSecond: 8000000 });
+  } catch { showToast('Video not supported'); return; }
 
   mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
   mediaRecorder.onstop = () => {
     const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/mp4' });
-    currentVideoBlob = blob;
-    currentBlob = null;
-    const container = document.getElementById('previewContainer');
-    container.innerHTML = '<video id="previewVid" controls playsinline style="max-width:100%;max-height:100%;border-radius:8px"></video>';
+    currentVideoBlob = blob; currentBlob = null;
+    document.getElementById('previewContainer').innerHTML = '<video id="previewVid" controls playsinline style="max-width:100%;max-height:100%;border-radius:8px"></video>';
     document.getElementById('previewVid').src = URL.createObjectURL(blob);
     document.getElementById('preview').classList.add('active');
   };
 
   mediaRecorder.start(100);
   isRecording = true;
-  document.getElementById('shutterBtn').classList.add('recording');
-
+  shutterBtn.classList.add('recording');
   recInterval = setInterval(() => {
     recSeconds++;
-    const m = Math.floor(recSeconds / 60);
-    const s = recSeconds % 60;
+    const m = Math.floor(recSeconds / 60), s = recSeconds % 60;
     document.getElementById('recTime').textContent = `${m}:${s.toString().padStart(2,'0')}`;
   }, 1000);
-
   document.getElementById('recTimer').classList.add('active');
 }
 
 function stopRecording() {
   if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    isRecording = false;
+    mediaRecorder.stop(); isRecording = false;
     clearInterval(recInterval);
-    document.getElementById('shutterBtn').classList.remove('recording');
+    shutterBtn.classList.remove('recording');
     document.getElementById('recTimer').classList.remove('active');
   }
 }
 
 // ============ SAVE / SHARE ============
-function savePhoto() {
-  if (currentVideoBlob) {
-    const ext = currentVideoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(currentVideoBlob);
-    a.download = `video_${Date.now()}.${ext}`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
-    showToast('Video saved');
-    return;
-  }
-  if (!currentBlob) return;
-  if (navigator.share && navigator.canShare) {
-    const file = new File([currentBlob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-    if (navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file] }).catch(() => fallbackSave());
-      return;
-    }
-  }
-  fallbackSave();
-}
-
-function fallbackSave() {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(currentBlob);
-  a.download = `photo_${Date.now()}.jpg`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
-  showToast('Photo saved');
-}
-
-function sharePhoto() {
+document.getElementById('saveBtn').addEventListener('click', () => {
   const blob = currentVideoBlob || currentBlob;
   if (!blob) return;
   const ext = currentVideoBlob ? (currentVideoBlob.type.includes('mp4') ? 'mp4' : 'webm') : 'jpg';
-  const type = currentVideoBlob ? currentVideoBlob.type : 'image/jpeg';
-  const file = new File([blob], `media_${Date.now()}.${ext}`, { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `brokenlens_${Date.now()}.${ext}`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  showToast(ext === 'jpg' ? 'Photo saved' : 'Video saved');
+});
+
+document.getElementById('shareBtn').addEventListener('click', () => {
+  const blob = currentVideoBlob || currentBlob;
+  if (!blob) return;
+  const ext = currentVideoBlob ? (currentVideoBlob.type.includes('mp4') ? 'mp4' : 'webm') : 'jpg';
+  const type = currentVideoBlob ? (currentVideoBlob.type || 'video/mp4') : 'image/jpeg';
+  const file = new File([blob], `brokenlens_${Date.now()}.${ext}`, { type });
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file] }).catch(() => {});
   } else {
-    fallbackSave();
+    showToast('Sharing not supported on this browser');
   }
-}
+});
 
 // ============ EVENT LISTENERS ============
 document.getElementById('markBroken').addEventListener('click', () => markCamera('broken'));
@@ -966,7 +1106,8 @@ function goToSettings() {
   if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
   if (timerTimeout) clearInterval(timerTimeout);
   document.getElementById('timerIndicator').classList.remove('active');
-  activeDeviceId = null; selectedCamIdx = -1; flashEnabled = false;
+  activeDeviceId = null; selectedCamIdx = -1; flashEnabled = false; isLocked = false;
+  document.getElementById('lockOverlay').classList.remove('active');
   clearConfig(); startSetup();
 }
 
@@ -974,11 +1115,12 @@ document.getElementById('resetBtn').addEventListener('click', goToSettings);
 document.getElementById('settingsBtn').addEventListener('click', goToSettings);
 
 document.getElementById('flipBtn').addEventListener('click', () => {
+  if (isLocked) return;
   if (isFront && workingBackCameras.length === 0) return;
   if (!isFront && workingFrontCameras.length === 0) return;
   isFront = !isFront;
-  const cameras = isFront ? workingFrontCameras : workingBackCameras;
-  if (cameras.length > 0) switchCamera(cameras[0].deviceId);
+  const cams = isFront ? workingFrontCameras : workingBackCameras;
+  if (cams.length > 0) switchCamera(cams[0].deviceId);
 });
 
 document.getElementById('closePreview').addEventListener('click', () => {
@@ -986,21 +1128,17 @@ document.getElementById('closePreview').addEventListener('click', () => {
   currentBlob = null; currentVideoBlob = null;
 });
 
-document.getElementById('saveBtn').addEventListener('click', savePhoto);
-document.getElementById('shareBtn').addEventListener('click', sharePhoto);
-
 // ============ INIT ============
 async function init() {
   const config = getSavedConfig();
   if (config && config.working && config.working.length > 0) {
     allCameras = await enumerateAllCameras();
     visibleCameras = getVisibleCameras(allCameras);
-    const currentIds = new Set(allCameras.map(c => c.deviceId));
-    if (config.working.every(id => currentIds.has(id))) {
+    const ids = new Set(allCameras.map(c => c.deviceId));
+    if (config.working.every(id => ids.has(id))) {
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('resetBtn').style.display = 'flex';
-      launchCamera(config);
-      return;
+      launchCamera(config); return;
     }
   }
   startSetup();
